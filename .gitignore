@@ -26,5 +26,3 @@ dist-ssr
 # Tauri build output
 src-tauri/target/
 
-# Sample data (for local testing only)
-sample-data/
