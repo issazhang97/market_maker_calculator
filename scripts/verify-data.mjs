@@ -6,18 +6,26 @@ import { fileURLToPath } from "url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const dataDir = join(__dirname, "..", "sample-data");
 
-// Replicate the parsing logic from excelParser.ts
+// Replicate the parsing logic from excelParser.ts (English headers)
 function parseExcelFile(buffer) {
   const wb = XLSX.read(buffer, { type: "buffer" });
   const records = [];
   for (const sheetName of wb.SheetNames) {
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: "" });
     for (const row of rows) {
-      const broker = row["券商名称"];
-      const date = String(row["交易日期"]).trim();
-      const buy = Number(row["买入金额"]) || 0;
-      const sell = Number(row["卖出金额"]) || 0;
-      if (!broker || !date) continue;
+      const broker = row["broker"] || row["券商名称"];
+      const dateRaw = row["date"] || row["交易日期"];
+      const buy = Number(row["buyamount"] || row["买入金额"]) || 0;
+      const sell = Number(row["sellamount"] || row["卖出金额"]) || 0;
+      if (!broker || !dateRaw) continue;
+
+      // Normalize date (handle "2026-3-12" → "2026-03-12")
+      const dateStr = String(dateRaw).trim();
+      const match = dateStr.match(/(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
+      const date = match
+        ? `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`
+        : dateStr;
+
       records.push({ fundTicker: sheetName.trim(), broker, date, buyAmount: buy, sellAmount: sell });
     }
   }
@@ -59,7 +67,7 @@ for (const r of allRecords) {
 const brokers = Object.keys(grouped).sort();
 console.log(`\nBrokers (${brokers.length}): ${brokers.join(", ")}\n`);
 
-// Print a mini summary for first 3 brokers × first 2 ETFs
+// Print sample verification
 console.log("=== Sample Verification (万元) ===");
 console.log(`${"Broker".padEnd(12)} ${"ETF".padEnd(8)} ${"昨日成交".padEnd(12)} ${"5日平均".padEnd(12)}`);
 console.log("-".repeat(48));
@@ -75,7 +83,7 @@ for (const broker of brokers.slice(0, 3)) {
   }
 }
 
-// Verify totals
+// Grand totals
 let grandYesterday = 0, grandAvg = 0;
 for (const broker of brokers) {
   for (const etf of etfCodes) {

@@ -4,7 +4,8 @@ import type { TradeRecord } from "../types";
 /**
  * Parse an Excel file buffer into TradeRecord[].
  * Each sheet name is treated as an ETF code (fundTicker).
- * Expected columns: 交易日期, 券商名称, 买入金额, 卖出金额
+ * Supports both English headers (fundticker, broker, date, buyamount, sellamount)
+ * and Chinese headers (券商名称, 交易日期, 买入金额, 卖出金额).
  */
 export function parseExcelFile(buffer: ArrayBuffer): TradeRecord[] {
   const workbook = XLSX.read(buffer, { type: "array" });
@@ -20,10 +21,10 @@ export function parseExcelFile(buffer: ArrayBuffer): TradeRecord[] {
     });
 
     for (const row of rows) {
-      const broker = findColumnValue(row, ["券商名称", "券商"]);
-      const dateRaw = findColumnValue(row, ["交易日期", "日期"]);
-      const buyRaw = findColumnValue(row, ["买入金额", "买入"]);
-      const sellRaw = findColumnValue(row, ["卖出金额", "卖出"]);
+      const broker = findColumnValue(row, ["broker", "券商名称", "券商"]);
+      const dateRaw = findColumnValue(row, ["date", "交易日期", "日期"]);
+      const buyRaw = findColumnValue(row, ["buyamount", "买入金额", "买入"]);
+      const sellRaw = findColumnValue(row, ["sellamount", "卖出金额", "卖出"]);
 
       if (!broker || !dateRaw) continue;
 
@@ -40,9 +41,9 @@ export function parseExcelFile(buffer: ArrayBuffer): TradeRecord[] {
 
 function findColumnValue(row: Record<string, unknown>, candidates: string[]): unknown {
   for (const key of Object.keys(row)) {
-    const trimmed = key.trim();
+    const lower = key.trim().toLowerCase();
     for (const candidate of candidates) {
-      if (trimmed === candidate || trimmed.includes(candidate)) {
+      if (lower === candidate.toLowerCase() || lower.includes(candidate.toLowerCase())) {
         return row[key];
       }
     }
@@ -70,9 +71,8 @@ function normalizeDate(val: unknown): string {
     return String(val);
   }
   if (typeof val === "string") {
-    // Try to normalize various date formats to YYYY-MM-DD
     const trimmed = val.trim();
-    // Handle YYYY/MM/DD or YYYY-MM-DD
+    // Handle YYYY/MM/DD, YYYY-MM-DD, YYYY-M-D etc.
     const match = trimmed.match(/(\d{4})[/-](\d{1,2})[/-](\d{1,2})/);
     if (match) {
       return `${match[1]}-${match[2].padStart(2, "0")}-${match[3].padStart(2, "0")}`;
