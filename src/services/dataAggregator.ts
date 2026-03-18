@@ -111,5 +111,5 @@ function formatDateDisplay(dateStr: string): string {
   const [y, m, d] = parts;
   const dateObj = new Date(Number(y), Number(m) - 1, Number(d));
   const weekday = WEEKDAY_NAMES[dateObj.getDay()];
-  return `${y}/${m}/${d}/${weekday}`;
+  return `${y}/${m.padStart(2, "0")}/${d.padStart(2, "0")}/${weekday}`;
 }

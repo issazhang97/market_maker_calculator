@@ -5,7 +5,8 @@ interface Props {
 }
 
 function formatNum(n: number): string {
-  return Math.round(n).toLocaleString("zh-CN");
+  if (n === 0) return "";
+  return n.toFixed(2);
 }
 
 export function SummaryTable({ data }: Props) {
@@ -14,20 +15,15 @@ export function SummaryTable({ data }: Props) {
   return (
     <div className="overflow-x-auto">
       <table className="summary-table">
-        {/* Title */}
-        <caption className="summary-caption">
-          做市成交汇总 {date}
-        </caption>
-
         <thead>
-          {/* Row 1: ETF code + name headers */}
+          {/* Row 1: Date + ETF name headers */}
           <tr>
             <th rowSpan={2} className="th-broker">
-              券商名称
+              {date}
             </th>
             {etfCodes.map((code) => (
               <th key={code} colSpan={2} className="th-etf">
-                {code} {etfNames[code] || code}
+                {etfNames[code] || code}
               </th>
             ))}
             <th colSpan={2} className="th-total">
@@ -35,7 +31,7 @@ export function SummaryTable({ data }: Props) {
             </th>
           </tr>
 
-          {/* Row 2: Sub-headers */}
+          {/* Row 2: (万元) label + sub-headers */}
           <tr>
             {etfCodes.map((code) => (
               <SubHeaders key={code} />

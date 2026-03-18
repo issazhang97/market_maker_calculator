@@ -4,32 +4,29 @@ import { writeFile } from "@tauri-apps/plugin-fs";
 import type { PivotData } from "../types";
 
 /**
- * Generate an Excel file from the pivot table data.
- * Returns a Uint8Array.
+ * Generate an Excel file matching the output format:
+ *   Row 0: date/weekday | ETF name (merged 2 cols) | ... | 合计 (merged 2 cols)
+ *   Row 1: (万元)       | 过去5日平均成交 | 昨日成交 | ...
+ *   Row 2+: broker      | values (2 decimal, blank if 0) ...
+ *   Last:   合计         | column sums ...
  */
 export function exportToExcel(data: PivotData): Uint8Array {
   const { etfCodes, etfNames, rows, totals, grandTotal, date } = data;
 
-  // Build array-of-arrays (AOA)
   const aoa: (string | number)[][] = [];
 
-  // Row 0: Title row with date
-  const titleRow: (string | number)[] = [`做市成交汇总 ${date}`];
-  aoa.push(titleRow);
-
-  // Row 1: Header row 1 — ETF codes (merged with row 2)
-  const header1: (string | number)[] = ["券商名称"];
+  // Row 0: Date + ETF name headers
+  const header1: (string | number)[] = [date];
   for (const code of etfCodes) {
-    const name = etfNames[code] || code;
-    header1.push(`${code} ${name}`);
-    header1.push(""); // placeholder for merged cell
+    header1.push(etfNames[code] || code);
+    header1.push("");
   }
   header1.push("合计");
-  header1.push(""); // placeholder
+  header1.push("");
   aoa.push(header1);
 
-  // Row 2: Header row 2 — sub-headers
-  const header2: (string | number)[] = [""];
+  // Row 1: (万元) + sub-headers
+  const header2: (string | number)[] = ["(万元)"];
   for (let i = 0; i < etfCodes.length; i++) {
     header2.push("过去5日平均成交");
     header2.push("昨日成交");
@@ -43,11 +40,11 @@ export function exportToExcel(data: PivotData): Uint8Array {
     const dataRow: (string | number)[] = [row.broker];
     for (const code of etfCodes) {
       const cell = row.cells[code] || { past5DaysAvg: 0, yesterday: 0 };
-      dataRow.push(Math.round(cell.past5DaysAvg));
-      dataRow.push(Math.round(cell.yesterday));
+      dataRow.push(cell.past5DaysAvg === 0 ? "" : round2(cell.past5DaysAvg));
+      dataRow.push(cell.yesterday === 0 ? "" : round2(cell.yesterday));
     }
-    dataRow.push(Math.round(row.total.past5DaysAvg));
-    dataRow.push(Math.round(row.total.yesterday));
+    dataRow.push(row.total.past5DaysAvg === 0 ? "" : round2(row.total.past5DaysAvg));
+    dataRow.push(row.total.yesterday === 0 ? "" : round2(row.total.yesterday));
     aoa.push(dataRow);
   }
 
@@ -55,11 +52,11 @@ export function exportToExcel(data: PivotData): Uint8Array {
   const totalRow: (string | number)[] = ["合计"];
   for (const code of etfCodes) {
     const cell = totals[code] || { past5DaysAvg: 0, yesterday: 0 };
-    totalRow.push(Math.round(cell.past5DaysAvg));
-    totalRow.push(Math.round(cell.yesterday));
+    totalRow.push(cell.past5DaysAvg === 0 ? "" : round2(cell.past5DaysAvg));
+    totalRow.push(cell.yesterday === 0 ? "" : round2(cell.yesterday));
   }
-  totalRow.push(Math.round(grandTotal.past5DaysAvg));
-  totalRow.push(Math.round(grandTotal.yesterday));
+  totalRow.push(grandTotal.past5DaysAvg === 0 ? "" : round2(grandTotal.past5DaysAvg));
+  totalRow.push(grandTotal.yesterday === 0 ? "" : round2(grandTotal.yesterday));
   aoa.push(totalRow);
 
   // Create worksheet
@@ -67,30 +64,23 @@ export function exportToExcel(data: PivotData): Uint8Array {
 
   // Cell merges
   const merges: XLSX.Range[] = [];
-  const totalCols = 1 + etfCodes.length * 2 + 2;
 
-  // Title row spans all columns
-  merges.push({ s: { r: 0, c: 0 }, e: { r: 0, c: totalCols - 1 } });
-
-  // "券商名称" spans rows 1-2
-  merges.push({ s: { r: 1, c: 0 }, e: { r: 2, c: 0 } });
-
-  // Each ETF header spans 2 columns in row 1
+  // Each ETF name header spans 2 columns in row 0
   for (let i = 0; i < etfCodes.length; i++) {
     const colStart = 1 + i * 2;
-    merges.push({ s: { r: 1, c: colStart }, e: { r: 1, c: colStart + 1 } });
+    merges.push({ s: { r: 0, c: colStart }, e: { r: 0, c: colStart + 1 } });
   }
 
-  // "合计" header spans 2 columns in row 1
+  // "合计" header spans 2 columns in row 0
   const totalColStart = 1 + etfCodes.length * 2;
-  merges.push({ s: { r: 1, c: totalColStart }, e: { r: 1, c: totalColStart + 1 } });
+  merges.push({ s: { r: 0, c: totalColStart }, e: { r: 0, c: totalColStart + 1 } });
 
   ws["!merges"] = merges;
 
   // Set column widths
-  const colWidths: XLSX.ColInfo[] = [{ wch: 14 }]; // 券商名称
+  const colWidths: XLSX.ColInfo[] = [{ wch: 18 }]; // date / broker column
   for (let i = 0; i < etfCodes.length * 2 + 2; i++) {
-    colWidths.push({ wch: 12 });
+    colWidths.push({ wch: 14 });
   }
   ws["!cols"] = colWidths;
 
@@ -100,6 +90,10 @@ export function exportToExcel(data: PivotData): Uint8Array {
 
   const wbout = XLSX.write(wb, { bookType: "xlsx", type: "array" });
   return new Uint8Array(wbout);
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
 }
 
 /**
@@ -113,7 +107,7 @@ export async function downloadExcel(data: PivotData): Promise<void> {
     filters: [{ name: "Excel", extensions: ["xlsx"] }],
   });
 
-  if (!filePath) return; // user cancelled
+  if (!filePath) return;
 
   const buffer = exportToExcel(data);
   await writeFile(filePath, buffer);
