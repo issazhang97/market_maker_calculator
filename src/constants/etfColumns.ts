@@ -13,7 +13,6 @@ export const PRODUCT_MAPPINGS: ProductMapping[] = [
     defaultCodes: ["159322"],
     brokerOverrides: {
       "方正证券": ["511020", "512390", "515700", "516180"],
-      "国泰海通证券": ["159215", "159306", "516820"],
     },
   },
   {

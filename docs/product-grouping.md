@@ -11,7 +11,7 @@ The app aggregates individual ETF codes into 8 product categories for the summar
 | 自由现金流 | 159233 | — |
 | AI | 512930 | — |
 | 通用航空 | 561660 | — |
-| 黄金股票 | 159322 | 方正证券 → 511020, 512390, 515700, 516180; 国泰海通证券 → 159215, 159306, 516820 |
+| 黄金股票 | 159322 | 方正证券 → 511020, 512390, 515700, 516180 |
 | 消费电子 | 561600 | 国信证券 → 159215 |
 | 港股医药 | 159718 | — |
 | 央企红利 | 159143 | — |
@@ -22,7 +22,6 @@ The app aggregates individual ETF codes into 8 product categories for the summar
 Most brokers use the **default ETF code(s)** for each product. However, some brokers trade different ETFs for the same product category. For example:
 
 - **方正证券** trades 4 different gold-related ETFs (511020, 512390, 515700, 516180) instead of the default 159322 for 黄金股票. Their amounts are summed together into the single 黄金股票 column.
-- **国泰海通证券** trades 3 different gold-related ETFs (159215, 159306, 516820) for 黄金股票.
 - **国信证券** trades 159215 instead of 561600 for 消费电子.
 
 ## Calculation Logic
@@ -45,14 +44,16 @@ The daily amount for each record is:
 3. **Product aggregation**: For each broker + product combination:
    - Look up the ETF codes for that broker/product (using override if applicable, otherwise default)
    - Sum amounts across all matching ETF codes for each date
-4. **5-day average**: For the selected target date, take the 5 most recent trading dates (inclusive of target date) and compute the average daily amount
+4. **5-day average**: For the selected target date, take the 5 most recent trading dates (inclusive of target date) and compute the average daily amount, dividing by the number of **active days** (dates where at least one ETF code has a record in the Excel file)
 5. **Yesterday**: The amount on the target date itself
 
 ### 5-Day Window
 
 - Dates are sorted descending
 - The window is: `[targetDate, targetDate-1, targetDate-2, targetDate-3, targetDate-4]` (5 trading days, **including** the target date)
-- Average = sum of 5 days / 5
+- Average = sum of active days / number of active days
+- **Active day**: A date where at least one of the product's ETF codes has a row in the broker's Excel file. Records with value 0 count as active (row exists). Missing records (no row) do not count.
+- Example: If an ETF started trading on 03-13 and the window covers 03-11 to 03-17, only the 3 days with records (03-13, 03-16, 03-17) are counted in the divisor.
 
 ## Configuration
 

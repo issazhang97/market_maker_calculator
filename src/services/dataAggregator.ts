@@ -68,37 +68,43 @@ export function aggregateData(
       // Per-date totals for tooltip
       const dailyAmounts: { date: string; amount: number; perCode?: { code: string; amount: number }[] }[] = [];
 
+      let activeDays = 0;
       for (const d of last5Dates) {
         let dayTotal = 0;
+        let dateHasRecord = false;
         const perCode: { code: string; amount: number }[] = [];
         for (const code of codes) {
+          // Distinguish "record exists with value 0" from "no record at all"
+          const hasRecord = grouped[broker]?.[code]?.[d] !== undefined;
+          if (hasRecord) dateHasRecord = true;
           const amt = grouped[broker]?.[code]?.[d] || 0;
           dayTotal += amt;
           if (codes.length > 1 && amt > 0) {
             perCode.push({ code, amount: amt });
           }
         }
+        if (dateHasRecord) activeDays++;
         dailyAmounts.push({ date: d, amount: dayTotal, perCode: perCode.length > 0 ? perCode : undefined });
         productPast5Sum += dayTotal;
         if (d === latestDate) productYesterday = dayTotal;
       }
 
-      const productPast5Avg = last5Dates.length > 0 ? productPast5Sum / last5Dates.length : 0;
+      const productPast5Avg = activeDays > 0 ? productPast5Sum / activeDays : 0;
 
       // Build tooltips
-      const avgTooltip = buildAvgTooltip(product.name, codes, dailyAmounts, productPast5Sum, last5Dates.length);
+      const avgTooltip = buildAvgTooltip(product.name, codes, dailyAmounts, productPast5Sum, activeDays);
       const yestTooltip = buildYestTooltip(product.name, codes, dailyAmounts[0]);
 
       cells[product.name] = { past5DaysAvg: productPast5Avg, yesterday: productYesterday, avgTooltip, yestTooltip };
       totalYesterday += productYesterday;
-      totalPast5Sum += productPast5Sum;
+      totalPast5Sum += productPast5Avg; // Sum of per-product averages (each already divided by its own activeDays)
     }
 
     rows.push({
       broker,
       cells,
       total: {
-        past5DaysAvg: last5Dates.length > 0 ? totalPast5Sum / last5Dates.length : 0,
+        past5DaysAvg: totalPast5Sum,
         yesterday: totalYesterday,
       },
     });
