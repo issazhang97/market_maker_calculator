@@ -86,3 +86,32 @@
 .row-totals .td-total-col {
   background-color: #f8cbad !important;
 }
+
+/* Tooltip trigger — dashed underline on cells with breakdown */
+.cell-has-tooltip {
+  cursor: default;
+  display: inline-block;
+  width: 100%;
+  border-bottom: 1px dashed #999;
+}
+
+/* Tooltip popup — fixed position, rendered as portal in <body> */
+.cell-tooltip {
+  position: fixed;
+  transform: translate(-50%, -100%) translateY(-8px);
+  background: #1e1e1e;
+  color: #e0e0e0;
+  font-size: 12px;
+  line-height: 1.5;
+  padding: 8px 12px;
+  border-radius: 6px;
+  white-space: pre;
+  font-family: "Menlo", "Consolas", "SF Mono", monospace;
+  pointer-events: none;
+  z-index: 10000;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  min-width: 200px;
+  max-width: 420px;
+  text-align: left;
+  border: 1px solid #444;
+}
