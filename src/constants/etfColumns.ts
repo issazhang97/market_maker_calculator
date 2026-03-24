@@ -11,14 +11,10 @@ export const PRODUCT_MAPPINGS: ProductMapping[] = [
   {
     name: "黄金股票",
     defaultCodes: ["159322"],
-    brokerOverrides: {
-      "方正证券": ["511020", "512390", "515700", "516180"],
-    },
   },
   {
     name: "消费电子",
     defaultCodes: ["561600"],
-    brokerOverrides: { "国信证券": ["159215"] },
   },
   { name: "港股医药", defaultCodes: ["159718"] },
   { name: "央企红利", defaultCodes: ["159143"] },

@@ -41,6 +41,8 @@ export function parseExcelFile(buffer: ArrayBuffer, filename?: string): TradeRec
       const buyRaw = findColumnValue(row, ["buyamount", "买入金额"]);
       const sellRaw = findColumnValue(row, ["sellamount", "卖出金额"]);
       const dailyTotalRaw = findColumnValue(row, ["当日成交金额", "总成交金额"]);
+      const holdingAmountRaw = findColumnValue(row, ["持仓金额", "holdvalue"]);
+      const holdingSharesRaw = findColumnValue(row, ["持仓份额", "holdshares"]);
 
       if (!broker || !dateRaw) continue;
 
@@ -48,6 +50,9 @@ export function parseExcelFile(buffer: ArrayBuffer, filename?: string): TradeRec
       let buyAmount = toNumber(buyRaw);
       let sellAmount = toNumber(sellRaw);
       let dailyTotal = dailyTotalRaw !== undefined ? toNumber(dailyTotalRaw) : undefined;
+      // Prefer 持仓金额, fallback to 持仓份额
+      const holdingRaw = holdingAmountRaw ?? holdingSharesRaw;
+      let holdingAmount = holdingRaw !== undefined ? toNumber(holdingRaw) : undefined;
 
       // Normalize to 万元
       if (!amountInWan) {
@@ -56,9 +61,12 @@ export function parseExcelFile(buffer: ArrayBuffer, filename?: string): TradeRec
         if (dailyTotal !== undefined) {
           dailyTotal = dailyTotal / 10000;
         }
+        if (holdingAmount !== undefined) {
+          holdingAmount = holdingAmount / 10000;
+        }
       }
 
-      records.push({ fundTicker, broker: String(broker).trim(), date, buyAmount, sellAmount, dailyTotal });
+      records.push({ fundTicker, broker: String(broker).trim(), date, buyAmount, sellAmount, dailyTotal, holdingAmount });
     }
   }
 
@@ -71,8 +79,12 @@ export function parseExcelFile(buffer: ArrayBuffer, filename?: string): TradeRec
 function resolveBroker(row: Record<string, unknown>, filename?: string): string | undefined {
   // Try broker columns in the row
   const rowBroker = findColumnValue(row, ["broker", "做市商", "券商名称", "券商"]);
-  if (rowBroker !== undefined && String(rowBroker).trim() !== "") {
-    return String(rowBroker).trim();
+  if (rowBroker !== undefined) {
+    const str = String(rowBroker).trim();
+    // Reject empty strings and pure-numeric values (e.g. 0) as broker names
+    if (str !== "" && !/^\d+$/.test(str)) {
+      return str;
+    }
   }
 
   // Fall back to filename-based detection

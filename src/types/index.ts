@@ -5,6 +5,7 @@ export interface TradeRecord {
   buyAmount: number;    // 买入金额
   sellAmount: number;   // 卖出金额
   dailyTotal?: number;  // 当日成交金额 (if provided in source)
+  holdingAmount?: number; // 持仓金额/持仓份额 (万元/万份)
 }
 
 export interface ETFSummaryCell {
@@ -31,4 +32,54 @@ export interface PivotData {
 export interface LoadedFile {
   name: string;
   data: ArrayBuffer;
+}
+
+export interface YearlyCell {
+  avgDailyTrading: number;
+  avgDailyHolding: number;
+}
+
+export interface YearlyProductRow {
+  productName: string;
+  productCode: string;
+  cells: Record<string, YearlyCell>; // keyed by broker
+  totalTrading: number;
+  totalHolding: number;
+}
+
+export interface YearlyPivotData {
+  year: string;
+  brokers: string[];
+  rows: YearlyProductRow[];
+  brokerTotals: Record<string, YearlyCell>;
+  grandTotalTrading: number;
+  grandTotalHolding: number;
+}
+
+export type PivotDimension = "broker" | "product" | "quarter" | "month";
+
+export interface PivotQuery {
+  rowDim: PivotDimension;
+  colDim: PivotDimension;
+  filters: {
+    year: string;
+    brokers?: string[];
+    products?: string[];
+  };
+}
+
+export interface PivotCell {
+  avgDailyTrading: number;
+  avgDailyHolding: number;
+}
+
+export interface GenericPivotData {
+  title: string;
+  query: PivotQuery;
+  rowKeys: { key: string; label: string }[];
+  colKeys: { key: string; label: string }[];
+  cells: Record<string, Record<string, PivotCell>>;
+  rowTotals: Record<string, PivotCell>;
+  colTotals: Record<string, PivotCell>;
+  grandTotal: PivotCell;
 }
