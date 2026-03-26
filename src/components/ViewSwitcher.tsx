@@ -1,4 +1,4 @@
-export type ViewType = "daily" | "yearly" | "custom";
+export type ViewType = "daily" | "yearly" | "custom" | "analytics";
 
 interface Props {
   currentView: ViewType;
@@ -25,6 +25,12 @@ export function ViewSwitcher({ currentView, onChange }: Props) {
         onClick={() => onChange("custom")}
       >
         自定义分析
+      </button>
+      <button
+        className={`view-tab ${currentView === "analytics" ? "view-tab-active" : ""}`}
+        onClick={() => onChange("analytics")}
+      >
+        数据分析
       </button>
     </div>
   );

@@ -3,6 +3,7 @@ import { useFileManager } from "./hooks/useFileManager";
 import { useSummaryData } from "./hooks/useSummaryData";
 import { useYearlyData } from "./hooks/useYearlyData";
 import { usePivotData } from "./hooks/usePivotData";
+import { useAnalyticsData } from "./hooks/useAnalyticsData";
 import { FileUploader } from "./components/FileUploader";
 import { FileList } from "./components/FileList";
 import { DateSelector } from "./components/DateSelector";
@@ -11,11 +12,12 @@ import { ViewSwitcher, type ViewType } from "./components/ViewSwitcher";
 import { SummaryTable } from "./components/SummaryTable";
 import { YearlyTable } from "./components/YearlyTable";
 import { PivotTable } from "./components/PivotTable";
+import { AnalyticsView } from "./components/AnalyticsView";
 import { DimensionSelector } from "./components/DimensionSelector";
 import { ExportButton } from "./components/ExportButton";
 import { YearlyExportButton } from "./components/YearlyExportButton";
 import { PivotExportButton } from "./components/PivotExportButton";
-import type { PivotQuery } from "./types";
+import type { PivotQuery, AnalyticsQuery } from "./types";
 import "./App.css";
 
 const DEFAULT_PIVOT_QUERY: PivotQuery = {
@@ -24,12 +26,23 @@ const DEFAULT_PIVOT_QUERY: PivotQuery = {
   filters: { year: "" },
 };
 
+const DEFAULT_ANALYTICS_QUERY: AnalyticsQuery = {
+  year: "",
+  metric: "trading",
+  granularity: "daily",
+  chartType: "line",
+  selectedBrokers: [],
+  selectedProducts: [],
+};
+
 function App() {
   const { files, addFiles, removeFile, clearFiles } = useFileManager();
   const [currentView, setCurrentView] = useState<ViewType>("daily");
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [pivotQuery, setPivotQuery] = useState<PivotQuery>(DEFAULT_PIVOT_QUERY);
+  const [analyticsQuery, setAnalyticsQuery] = useState<AnalyticsQuery>(DEFAULT_ANALYTICS_QUERY);
+
   const { pivotData, availableDates, anomalyFlags, loading, error } = useSummaryData(files, selectedDate);
   const { yearlyData, availableYears, loading: yearlyLoading, error: yearlyError } = useYearlyData(files, selectedYear);
 
@@ -53,6 +66,17 @@ function App() {
     error: customError,
   } = usePivotData(files, stablePivotQuery);
 
+  const {
+    trendSeries,
+    rankings,
+    marketShare,
+    availableYears: analyticsAvailableYears,
+    availableBrokers: analyticsBrokers,
+    availableProducts: analyticsProducts,
+    loading: analyticsLoading,
+    error: analyticsError,
+  } = useAnalyticsData(files, analyticsQuery);
+
   // When custom available years load and no year is selected, pick the first
   useEffect(() => {
     if (customAvailableYears.length > 0 && !pivotQuery.filters.year) {
@@ -60,8 +84,19 @@ function App() {
     }
   }, [customAvailableYears, pivotQuery.filters.year]);
 
+  // When analytics available years load and no year is selected, pick the first
+  useEffect(() => {
+    if (analyticsAvailableYears.length > 0 && !analyticsQuery.year) {
+      setAnalyticsQuery((q) => ({ ...q, year: analyticsAvailableYears[0] }));
+    }
+  }, [analyticsAvailableYears, analyticsQuery.year]);
+
   const handlePivotQueryChange = useCallback((q: PivotQuery) => {
     setPivotQuery(q);
+  }, []);
+
+  const handleAnalyticsQueryChange = useCallback((q: AnalyticsQuery) => {
+    setAnalyticsQuery(q);
   }, []);
 
   // Reset selections when files change
@@ -69,10 +104,18 @@ function App() {
     setSelectedDate(null);
     setSelectedYear(null);
     setPivotQuery(DEFAULT_PIVOT_QUERY);
+    setAnalyticsQuery(DEFAULT_ANALYTICS_QUERY);
   }, [files]);
 
-  const isLoading = currentView === "daily" ? loading : currentView === "yearly" ? yearlyLoading : customLoading;
-  const currentError = currentView === "daily" ? error : currentView === "yearly" ? yearlyError : customError;
+  const isLoading = currentView === "daily" ? loading
+    : currentView === "yearly" ? yearlyLoading
+    : currentView === "custom" ? customLoading
+    : analyticsLoading;
+
+  const currentError = currentView === "daily" ? error
+    : currentView === "yearly" ? yearlyError
+    : currentView === "custom" ? customError
+    : analyticsError;
 
   return (
     <div className="min-h-screen bg-white p-6">
@@ -153,6 +196,19 @@ function App() {
             </>
           )}
         </div>
+      )}
+
+      {currentView === "analytics" && files.length > 0 && (
+        <AnalyticsView
+          query={analyticsQuery}
+          onQueryChange={handleAnalyticsQueryChange}
+          trendSeries={trendSeries}
+          rankings={rankings}
+          marketShare={marketShare}
+          availableYears={analyticsAvailableYears}
+          availableBrokers={analyticsBrokers}
+          availableProducts={analyticsProducts}
+        />
       )}
 
       {!isLoading && !currentError && files.length === 0 && (
