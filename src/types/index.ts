@@ -37,6 +37,8 @@ export interface LoadedFile {
 export interface YearlyCell {
   avgDailyTrading: number;
   avgDailyHolding: number;
+  tradingTooltip?: string;
+  holdingTooltip?: string;
 }
 
 export interface YearlyProductRow {
@@ -71,6 +73,8 @@ export interface PivotQuery {
 export interface PivotCell {
   avgDailyTrading: number;
   avgDailyHolding: number;
+  tradingTooltip?: string;
+  holdingTooltip?: string;
 }
 
 export interface GenericPivotData {
@@ -83,3 +87,5 @@ export interface GenericPivotData {
   colTotals: Record<string, PivotCell>;
   grandTotal: PivotCell;
 }
+
+export type { TrendPoint, TrendSeries, RankingEntry, MarketShareRow, AnomalyFlag, AnomalyFlags, AnalyticsQuery } from "./analytics";
