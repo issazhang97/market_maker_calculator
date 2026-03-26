@@ -240,3 +240,27 @@
   text-align: left;
   border: 1px solid #444;
 }
+
+/* Anomaly highlighting */
+.anomaly-spike {
+  background-color: #dcfce7 !important;
+  position: relative;
+}
+
+.anomaly-drop {
+  background-color: #fee2e2 !important;
+  position: relative;
+}
+
+.anomaly-indicator {
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.anomaly-spike .anomaly-indicator {
+  color: #16a34a;
+}
+
+.anomaly-drop .anomaly-indicator {
+  color: #dc2626;
+}

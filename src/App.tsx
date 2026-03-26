@@ -30,7 +30,7 @@ function App() {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [pivotQuery, setPivotQuery] = useState<PivotQuery>(DEFAULT_PIVOT_QUERY);
-  const { pivotData, availableDates, loading, error } = useSummaryData(files, selectedDate);
+  const { pivotData, availableDates, anomalyFlags, loading, error } = useSummaryData(files, selectedDate);
   const { yearlyData, availableYears, loading: yearlyLoading, error: yearlyError } = useYearlyData(files, selectedYear);
 
   // Stabilize pivotQuery reference for usePivotData
@@ -116,7 +116,7 @@ function App() {
             </h2>
             <ExportButton data={pivotData} />
           </div>
-          <SummaryTable data={pivotData} />
+          <SummaryTable data={pivotData} anomalyFlags={anomalyFlags} />
         </div>
       )}
 
