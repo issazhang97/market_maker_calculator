@@ -52,7 +52,7 @@ export function YearlyTable({ data }: Props) {
               {brokers.map((broker) => {
                 const cell = row.cells[broker] || { avgDailyTrading: 0, avgDailyHolding: 0 };
                 return (
-                  <YearlyCellPair key={broker} trading={cell.avgDailyTrading} holding={cell.avgDailyHolding} />
+                  <YearlyCellPair key={broker} trading={cell.avgDailyTrading} holding={cell.avgDailyHolding} tradingTooltip={cell.tradingTooltip} holdingTooltip={cell.holdingTooltip} />
                 );
               })}
               <td className="td-num td-total-col">
@@ -70,7 +70,7 @@ export function YearlyTable({ data }: Props) {
             {brokers.map((broker) => {
               const cell = brokerTotals[broker] || { avgDailyTrading: 0, avgDailyHolding: 0 };
               return (
-                <YearlyCellPair key={broker} trading={cell.avgDailyTrading} holding={cell.avgDailyHolding} />
+                <YearlyCellPair key={broker} trading={cell.avgDailyTrading} holding={cell.avgDailyHolding} tradingTooltip={cell.tradingTooltip} holdingTooltip={cell.holdingTooltip} />
               );
             })}
             <td className="td-num td-total-col">
@@ -95,14 +95,19 @@ function BrokerSubHeaders() {
   );
 }
 
-function YearlyCellPair({ trading, holding }: { trading: number; holding: number }) {
+function YearlyCellPair({ trading, holding, tradingTooltip, holdingTooltip }: {
+  trading: number;
+  holding: number;
+  tradingTooltip?: string;
+  holdingTooltip?: string;
+}) {
   return (
     <>
       <td className="td-num">
-        <TooltipCell value={formatNum(trading)} />
+        <TooltipCell value={formatNum(trading)} tooltip={tradingTooltip} />
       </td>
       <td className="td-num">
-        <TooltipCell value={formatNum(holding)} />
+        <TooltipCell value={formatNum(holding)} tooltip={holdingTooltip} />
       </td>
     </>
   );

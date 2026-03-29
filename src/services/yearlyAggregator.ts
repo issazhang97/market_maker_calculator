@@ -107,7 +107,16 @@ export function aggregateYearlyData(
       const avgTrading = totalTrading / numDays;
       const avgHolding = totalHolding / numDays;
 
-      cells[broker] = { avgDailyTrading: avgTrading, avgDailyHolding: avgHolding };
+      const tradingTooltip = buildYearlyTooltip(
+        getEtfName(code), code, broker, "单边日均成交",
+        dates, codeData, "trading", totalTrading, numDays
+      );
+      const holdingTooltip = buildYearlyTooltip(
+        getEtfName(code), code, broker, "日均持仓",
+        dates, codeData, "holding", totalHolding, numDays
+      );
+
+      cells[broker] = { avgDailyTrading: avgTrading, avgDailyHolding: avgHolding, tradingTooltip, holdingTooltip };
       brokerTotals[broker].avgDailyTrading += avgTrading;
       brokerTotals[broker].avgDailyHolding += avgHolding;
       rowTotalTrading += avgTrading;
@@ -134,4 +143,54 @@ export function aggregateYearlyData(
     grandTotalTrading,
     grandTotalHolding,
   };
+}
+
+function fmtNum(n: number): string {
+  return n === 0 ? "0" : n.toFixed(2);
+}
+
+function fmtPad(n: number, width = 12): string {
+  return fmtNum(n).padStart(width);
+}
+
+function buildYearlyTooltip(
+  productName: string,
+  code: string,
+  broker: string,
+  metric: string,
+  dates: string[],
+  codeData: Record<string, { trading: number; holding: number }>,
+  field: "trading" | "holding",
+  total: number,
+  numDays: number,
+): string {
+  if (total === 0) return "";
+
+  const lines: string[] = [];
+  lines.push(`【${productName}】${broker}`);
+  lines.push(`ETF: ${code}  ${metric}`);
+  lines.push("─".repeat(34));
+
+  // Show sample dates (first 5 + last 5 if too many)
+  const sorted = [...dates].sort();
+  const MAX_SHOW = 10;
+  if (sorted.length <= MAX_SHOW) {
+    for (const d of sorted) {
+      lines.push(`${d}:${fmtPad(codeData[d][field])}`);
+    }
+  } else {
+    for (const d of sorted.slice(0, 5)) {
+      lines.push(`${d}:${fmtPad(codeData[d][field])}`);
+    }
+    lines.push(`  ... (${sorted.length - 10} 天省略)`);
+    for (const d of sorted.slice(-5)) {
+      lines.push(`${d}:${fmtPad(codeData[d][field])}`);
+    }
+  }
+
+  lines.push("─".repeat(34));
+  lines.push(`合计:${fmtPad(total)}`);
+  lines.push(`÷ ${numDays}天 =${fmtPad(total / numDays)}`);
+
+  return lines.join("\n");
 }

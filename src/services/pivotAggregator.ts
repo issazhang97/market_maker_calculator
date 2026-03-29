@@ -161,9 +161,14 @@ export function aggregatePivot(
       const totalTrading = Object.values(dateMap).reduce((s, v) => s + v.trading, 0);
       const totalHolding = Object.values(dateMap).reduce((s, v) => s + v.holding, 0);
 
+      const rowLabel = getDimLabel(rk, rowDim);
+      const colLabel = getDimLabel(ck, colDim);
+
       const cell: PivotCell = {
         avgDailyTrading: totalTrading / numDays,
         avgDailyHolding: totalHolding / numDays,
+        tradingTooltip: buildPivotTooltip(rowLabel, colLabel, "单边日均成交", dates, dateMap, "trading", totalTrading, numDays),
+        holdingTooltip: buildPivotTooltip(rowLabel, colLabel, "日均持仓", dates, dateMap, "holding", totalHolding, numDays),
       };
 
       cells[rk][ck] = cell;
@@ -215,4 +220,52 @@ export function extractFilterOptions(
     .map((code) => ({ code, name: getEtfName(code) }));
 
   return { brokers, products };
+}
+
+function fmtNum(n: number): string {
+  return n === 0 ? "0" : n.toFixed(2);
+}
+
+function fmtPad(n: number, width = 12): string {
+  return fmtNum(n).padStart(width);
+}
+
+function buildPivotTooltip(
+  rowLabel: string,
+  colLabel: string,
+  metric: string,
+  dates: string[],
+  dateMap: Record<string, { trading: number; holding: number }>,
+  field: "trading" | "holding",
+  total: number,
+  numDays: number,
+): string {
+  if (total === 0) return "";
+
+  const lines: string[] = [];
+  lines.push(`【${rowLabel}】${colLabel}`);
+  lines.push(metric);
+  lines.push("─".repeat(34));
+
+  const sorted = [...dates].sort();
+  const MAX_SHOW = 10;
+  if (sorted.length <= MAX_SHOW) {
+    for (const d of sorted) {
+      lines.push(`${d}:${fmtPad(dateMap[d][field])}`);
+    }
+  } else {
+    for (const d of sorted.slice(0, 5)) {
+      lines.push(`${d}:${fmtPad(dateMap[d][field])}`);
+    }
+    lines.push(`  ... (${sorted.length - 10} 天省略)`);
+    for (const d of sorted.slice(-5)) {
+      lines.push(`${d}:${fmtPad(dateMap[d][field])}`);
+    }
+  }
+
+  lines.push("─".repeat(34));
+  lines.push(`合计:${fmtPad(total)}`);
+  lines.push(`÷ ${numDays}天 =${fmtPad(total / numDays)}`);
+
+  return lines.join("\n");
 }

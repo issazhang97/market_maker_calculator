@@ -14,10 +14,10 @@ function CellPair({ cell }: { cell: PivotCell }) {
   return (
     <>
       <td className="td-num">
-        <TooltipCell value={formatNum(cell.avgDailyTrading)} />
+        <TooltipCell value={formatNum(cell.avgDailyTrading)} tooltip={cell.tradingTooltip} />
       </td>
       <td className="td-num">
-        <TooltipCell value={formatNum(cell.avgDailyHolding)} />
+        <TooltipCell value={formatNum(cell.avgDailyHolding)} tooltip={cell.holdingTooltip} />
       </td>
     </>
   );

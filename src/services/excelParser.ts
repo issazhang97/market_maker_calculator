@@ -1,16 +1,11 @@
 import * as XLSX from "xlsx";
 import type { TradeRecord } from "../types";
 
-/** Known broker name patterns for filename-based detection */
-const BROKER_PATTERNS: [RegExp, string][] = [
-  [/方正/, "方正证券"],
-  [/华泰/, "华泰证券"],
-  [/中信/, "中信证券"],
-  [/山西/, "山西证券"],
-  [/银河/, "银河证券"],
-  [/国信/, "国信证券"],
-  [/国泰海通|国泰|海通/, "国泰海通证券"],
-];
+/** Extract broker name from filename by matching 'XX证券' pattern */
+function extractBrokerFromFilename(filename: string): string | undefined {
+  const match = filename.match(/[\u4e00-\u9fff]+证券/);
+  return match ? match[0] : undefined;
+}
 
 /**
  * Parse an Excel file buffer into TradeRecord[].
@@ -89,11 +84,8 @@ function resolveBroker(row: Record<string, unknown>, filename?: string): string 
 
   // Fall back to filename-based detection
   if (filename) {
-    for (const [pattern, name] of BROKER_PATTERNS) {
-      if (pattern.test(filename)) {
-        return name;
-      }
-    }
+    const brokerFromFile = extractBrokerFromFilename(filename);
+    if (brokerFromFile) return brokerFromFile;
   }
 
   return undefined;
